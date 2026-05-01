@@ -52,28 +52,28 @@ def main():
 
        # 🔥 Check if tool is called
     if message.tool_calls:
-        tool_call = message.tool_calls[0]
-        function_name = tool_call.function.name
-        arguments = json.loads(tool_call.function.arguments)
+        messages.append(message)
 
-        if function_name == "get_weather":
-            result = get_weather(arguments["city"])
+        for tool_call in message.tool_calls:
+            function_name = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
 
-            # Append tool response
-            messages.append(message)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": result
-            })
+            if function_name == "get_weather":
+                result = get_weather(arguments["city"])
 
-            # 🔁 Send back to model for final response
-            second_response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages
-            )
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result
+                })
 
-            print("Response Tool Called:", second_response.choices[0].message.content)
+        # 🔁 Final response after all tool results
+        second_response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages
+        )
+
+        print("Response Tool Called:", second_response.choices[0].message.content)
 
     else:
         print("Response:", message.content)
